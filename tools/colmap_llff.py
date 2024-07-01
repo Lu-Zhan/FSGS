@@ -142,7 +142,7 @@ def pipeline(scene, base_path, n_views):
 
 
     images = {}
-    with open('../sparse/0/images.txt', "r") as fid:
+    with open(f'../sparse/0/images.txt', "r") as fid:
         while True:
             line = fid.readline()
             if not line:
@@ -191,6 +191,9 @@ def pipeline(scene, base_path, n_views):
     os.system('colmap stereo_fusion --workspace_path dense --output_path dense/fused.ply')
 
 
-for scene in ['fern', 'flower', 'fortress',  'horns',  'leaves',  'orchids',  'room',  'trex']:# ['bonsai', 'counter', 'garden', 'kitchen', 'room', 'stump']:
-    pipeline(scene, base_path = '/ssd1/zehao/FSGS/dataset/nerf_llff_data/', n_views = 3)  # please use absolute path!
+# for scene in ['fern', 'flower', 'fortress',  'horns',  'leaves',  'orchids',  'room',  'trex']:# ['bonsai', 'counter', 'garden', 'kitchen', 'room', 'stump']:
+#     pipeline(scene, base_path = '/home/luzhan/nerf_llff_data/', n_views = 3)  # please use absolute path!
 
+
+for scene in ['fern']:# ['bonsai', 'counter', 'garden', 'kitchen', 'room', 'stump']:
+    pipeline(scene, base_path = '/home/luzhan/nerf_llff_data/', n_views = 3)  # please use absolute path!

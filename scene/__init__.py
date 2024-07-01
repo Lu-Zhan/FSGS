@@ -44,13 +44,13 @@ class Scene:
         self.test_cameras = {}
         self.pseudo_cameras = {}
 
-        if os.path.exists(os.path.join(args.source_path, "sparse")):
+        if os.path.exists(os.path.join(args.source_path, "sparse")) or os.path.exists(os.path.join(args.source_path, "3_views")):
             scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, args.n_views)
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
             print("Found transforms_train.json file, assuming Blender data set!")
             scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval, args.n_views)
         else:
-            assert False, "Could not recognize scene type!"
+            assert False, f"Could not recognize scene type! please check {args.source_path}"
 
 
         if not self.loaded_iter:

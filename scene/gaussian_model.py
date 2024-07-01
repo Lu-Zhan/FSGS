@@ -127,6 +127,10 @@ class GaussianModel:
     def oneupSHdegree(self):
         if self.active_sh_degree < self.max_sh_degree:
             self.active_sh_degree += 1
+    
+    #LZ: add scaling up function
+    def scaleup_scaling(self, scale_factor=1.1):
+        self._scaling.data = self.scaling_inverse_activation(self.get_scaling.data * scale_factor)
 
     def create_from_pcd(self, pcd: BasicPointCloud, spatial_lr_scale: float):
         self.spatial_lr_scale = spatial_lr_scale

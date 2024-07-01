@@ -97,6 +97,12 @@ class OptimizationParams(ParamGroup):
         self.dist_thres = 10.
         self.depth_weight = 0.05
         self.depth_pseudo_weight = 0.5
+
+        # LZ: add dilation parameters
+        self.dilation_interval = 1000
+        self.dilation_factor = 0.1
+        self.dilation_until_iter = 30_000
+
         super().__init__(parser, "Optimization Parameters")
 
 
