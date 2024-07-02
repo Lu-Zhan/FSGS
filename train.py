@@ -94,8 +94,8 @@ def training(dataset, opt, pipe, args):
         # Loss
         gt_image = viewpoint_cam.original_image.cuda()
         Ll1 =  l1_loss_mask(image, gt_image)
-        loss = ((1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image)))
-
+        ssim_loss = ssim(image, gt_image)
+        loss = ((1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim_loss))
 
         rendered_depth = render_pkg["depth"][0]
         midas_depth = torch.tensor(viewpoint_cam.depth_image).cuda()
@@ -110,7 +110,6 @@ def training(dataset, opt, pipe, args):
 
         if iteration > args.end_sample_pseudo:
             args.depth_weight = 0.001
-
 
 
         if iteration % args.sample_pseudo_interval == 0 and iteration > args.start_sample_pseudo and iteration < args.end_sample_pseudo:

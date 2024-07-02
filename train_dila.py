@@ -58,6 +58,9 @@ def training(dataset, opt, pipe, args):
     viewpoint_stack, pseudo_stack = None, None
     ema_loss_for_log = 0.0
     first_iter += 1
+
+    print("Dilation factor", opt.dilation_factor)
+
     for iteration in range(first_iter, opt.iterations + 1):
         if network_gui.conn == None:
             network_gui.try_connect()

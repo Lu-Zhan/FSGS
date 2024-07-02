@@ -27,27 +27,31 @@ def l1_loss_mask(network_output, gt, mask = None):
 def l2_loss(network_output, gt):
     return ((network_output - gt) ** 2).mean()
 
-def gaussian(window_size, sigma):
-    gauss = torch.Tensor([exp(-(x - window_size // 2) ** 2 / float(2 * sigma ** 2)) for x in range(window_size)])
+def gaussian(window_size, sigma, example):
+    gauss_numpy = [exp(-(x - window_size // 2) ** 2 / float(2 * sigma ** 2)) for x in range(window_size)]
+    gauss = torch.tensor(gauss_numpy, device=example.device)
+
+    # gauss = gauss.to(example)
+
     return gauss / gauss.sum()
 
-def create_window(window_size, channel):
-    _1D_window = gaussian(window_size, 1.5).unsqueeze(1)
+def create_window(window_size, channel, example):
+    _1D_window = gaussian(window_size, 1.5, example).unsqueeze(1)
     _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
     window = Variable(_2D_window.expand(channel, 1, window_size, window_size).contiguous())
     return window
 
 def ssim(img1, img2, mask=None, window_size=11, size_average=True):
     channel = img1.size(-3)
-    window = create_window(window_size, channel)
+    window = create_window(window_size, channel, img1)
 
     if mask is not None:
         img1 = img1 * mask + (1 - mask)
         img2 = img2 * mask + (1 - mask)
 
-    if img1.is_cuda:
-        window = window.cuda(img1.get_device())
-    window = window.type_as(img1)
+    # if img1.is_cuda:
+    #     window = window.cuda(img1.get_device())
+    # window = window.type_as(img1)
 
     return _ssim(img1, img2, window, window_size, channel, size_average)
 
