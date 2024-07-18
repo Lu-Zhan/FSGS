@@ -59,7 +59,8 @@ def training(dataset, opt, pipe, args):
     ema_loss_for_log = 0.0
     first_iter += 1
 
-    print("Dilation factor", opt.dilation_factor)
+    # print("Dilation factor", opt.dilation_factor)
+    print("Low pass factor", opt.init_lowpass_factor)
 
     for iteration in range(first_iter, opt.iterations + 1):
         if network_gui.conn == None:
@@ -164,13 +165,19 @@ def training(dataset, opt, pipe, args):
                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
                     size_threshold = None
                     gaussians.densify_and_prune(opt.densify_grad_threshold, opt.prune_threshold, scene.cameras_extent, size_threshold, iteration)
+
+            # # LZ: Dilation
+            # if iteration % opt.dilation_interval == 0 and iteration < opt.dilation_until_iter:
+            #     if iteration < opt.iterations - opt.dilation_interval:
+            #         # don't update in the end of training
+            #         scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
+            #         gaussians.scaleup_scaling(scale_factor=scale_factor)
             
-            # LZ: Dilation
-            if iteration % opt.dilation_interval == 0 and iteration < opt.dilation_until_iter:
-                if iteration < opt.iterations - opt.dilation_interval:
-                    # don't update in the end of training
-                    scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
-                    gaussians.scaleup_scaling(scale_factor=scale_factor)
+            # LZ: Low-pass filtering
+            if iteration % opt.lowpass_interval == 0 and iteration < opt.lowpass_until_iter:
+                lp_factor = opt.init_lowpass_factor * (1 - iteration / opt.lowpass_until_iter)
+                print("Apply Low pass factor", lp_factor)
+                gaussians.apply_low_pass_filter(lp_factor=lp_factor)
 
             # Optimizer step
             if iteration < opt.iterations:

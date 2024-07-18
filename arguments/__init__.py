@@ -103,6 +103,11 @@ class OptimizationParams(ParamGroup):
         self.dilation_factor = 0.1
         self.dilation_until_iter = 30_000
 
+        # LZ: add low-pass filtering parameters
+        self.init_lowpass_factor = 0.1
+        self.lowpass_interval = 100
+        self.lowpass_until_iter = 8_000
+
         super().__init__(parser, "Optimization Parameters")
 
 

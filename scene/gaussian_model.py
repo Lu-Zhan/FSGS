@@ -131,6 +131,25 @@ class GaussianModel:
     #LZ: add scaling up function
     def scaleup_scaling(self, scale_factor=1.1):
         self._scaling.data = self.scaling_inverse_activation(self.get_scaling.data * scale_factor)
+    
+    # LZ: add low-pass filter to scale and opacity
+    def apply_low_pass_filter(self, lp_factor=0.1):
+        scales = self.get_scaling.data
+        opacity = self.get_opacity.data
+
+        # apply 3D filter
+        scales_square = torch.square(scales)
+        det1 = scales_square.prod(dim=1)
+        scales_square = scales_square + lp_factor ** 2
+
+        det2 = scales_square.prod(dim=1)
+        coef = torch.sqrt(det1 / det2)
+
+        new_opacity = opacity * coef[..., None]
+        new_scales = torch.sqrt(scales_square)
+
+        self._scaling.data = self.scaling_inverse_activation(new_scales)
+        self._opacity.data = self.inverse_opacity_activation(new_opacity)
 
     def create_from_pcd(self, pcd: BasicPointCloud, spatial_lr_scale: float):
         self.spatial_lr_scale = spatial_lr_scale
