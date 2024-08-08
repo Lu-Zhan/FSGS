@@ -107,6 +107,10 @@ class OptimizationParams(ParamGroup):
         self.init_lowpass_factor = 0.1
         self.lowpass_interval = 100
         self.lowpass_until_iter = 8_000
+        
+        # LZ: control if use the proximity term
+        self.use_proximity = 1
+        self.log_freq = 1
 
         super().__init__(parser, "Optimization Parameters")
 

@@ -23,6 +23,9 @@ from utils.general_utils import strip_symmetric, build_scaling_rotation, chamfer
 import open3d as o3d
 from torch.optim.lr_scheduler import MultiStepLR
 
+from PIL import Image
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
 
 class GaussianModel:
 
@@ -495,13 +498,14 @@ class GaussianModel:
                                    new_rotation)
 
 
-    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size, iter):
+    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size, iter, us_proximity=True):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
 
         self.densify_and_clone(grads, max_grad, extent)
         self.densify_and_split(grads, max_grad, extent, iter)
-        if iter < 2000:
+
+        if iter < 2000 and us_proximity:
             self.proximity(extent)
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
@@ -518,3 +522,107 @@ class GaussianModel:
         self.xyz_gradient_accum[update_filter] += torch.norm(viewspace_point_tensor.grad[update_filter, :2], dim=-1,
                                                              keepdim=True)
         self.denom[update_filter] += 1
+
+    @torch.no_grad()
+    def log_3D_frequency(self, step, save_path):
+        import scipy.stats as stats
+
+        scales = self.get_scaling.data
+        scales_freq = 1 / scales    # (n, 3)
+
+        opacity = self.get_opacity[:, 0]
+
+        mask = opacity > 0.01
+        scales_freq = scales_freq[mask]
+        opacity = opacity[mask].cpu().numpy()
+
+        # draw the frequency of the 3D points into 3 views, x, y, z axis
+        # Gaussian function in frequency domain with mean = 0, std = scales_freq
+        fig, ax = plt.subplots(3, 1)
+        labels = ['x', 'y', 'z']
+
+        try:
+            _ = self.freq_stat
+        except:
+            self.freq_stat = {}
+
+        self.freq_stat[step] = {
+            'x': {},
+            'y': {},
+            'z': {}
+        }
+
+        # breakpoint()
+        
+        for c in range(3):
+            std_x = scales_freq[:, c].cpu().numpy()
+
+            # x = np.linspace(0, std_x_mean + 3 * std_x_std, 1000)
+            x = np.linspace(0, 2000, 1000)
+
+            y = 0
+            for op, std in zip(opacity, std_x):
+                y += op * stats.norm.pdf(x, 0, std)
+
+            y = np.log(y + 1)
+
+            self.freq_stat[step][labels[c]] = {
+                'x': x,
+                'y': y
+            }
+
+            ax[c].plot(x, y)
+            ax[c].set_ylabel(labels[c])
+
+        # Draw the canvas
+        canvas = FigureCanvas(fig)
+        canvas.draw()
+
+        # Convert the canvas to a NumPy array
+        width, height = fig.get_size_inches() * fig.get_dpi()
+        image = np.frombuffer(canvas.tostring_rgb(), dtype='uint8').reshape(int(height), int(width), 3)
+
+        # Save the NumPy array to an image file
+        im = Image.fromarray(image)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        im.save(save_path)
+
+        # save x y into npz
+        np.savez(save_path.replace('.png', '.npz'), x=x, y=np.exp(y) - 1)
+    
+    @torch.no_grad()
+    def log_3D_frequency_progress(self, save_path):
+        from matplotlib import colormaps
+
+        all_num = len(self.freq_stat.keys())
+        # all_num = 30
+        cmap = colormaps['jet'].resampled(all_num)
+
+        fig, ax = plt.subplots(1, 1)
+        
+        for i, step in enumerate(self.freq_stat.keys()):
+            # for j, c in enumerate(['x', 'y', 'z']):
+            for j, c in enumerate(['x']):
+                xy_info = self.freq_stat[step][c]
+                x = xy_info['x']
+                y = xy_info['y']
+
+                # Create the figure and axis
+                ax.plot(x, y, color=cmap(i / all_num), alpha=0.2, label=f'{step}')
+
+                # Add title and labels
+                ax.set_ylabel(f'{c} axis-ln(v+1)')
+                ax.legend()
+        
+        # Draw the canvas
+        canvas = FigureCanvas(fig)
+        canvas.draw()
+
+        # Convert the canvas to a NumPy array
+        width, height = fig.get_size_inches() * fig.get_dpi()
+        image = np.frombuffer(canvas.tostring_rgb(), dtype='uint8').reshape(int(height), int(width), 3)
+
+        # Save the NumPy array to an image file
+        im = Image.fromarray(image)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        im.save(save_path)

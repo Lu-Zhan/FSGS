@@ -3,9 +3,10 @@ import json
 import glob
 from collections import OrderedDict
 
-exp_dir = '/home/space/exps/fsgs_exps/llff/denth'
+exp_dir = '/home/space/exps/fsgs_exps/llff_dila/prove'
 exp_names = os.listdir(exp_dir)
-exp_names = sorted(exp_names, key=lambda x: float(x.split('_')[-1]))
+exp_names = [x for x in exp_names]
+exp_names = sorted(exp_names, key=lambda x: float(x.split('_')[-1][3:]))
 
 data_names = os.listdir(os.path.join(exp_dir, exp_names[0]))
 data_names = sorted(data_names)
@@ -29,7 +30,7 @@ for exp_name in exp_names:
 
         all_results[exp_name][data_name] = psnr
 
-with open('eval/temp_denth.csv', 'w+') as f:
+with open('eval/temp_prove.csv', 'w+') as f:
     f.write('method,' + ','.join(data_names) + '\n')
     for exp_name in exp_names:
         line = exp_name

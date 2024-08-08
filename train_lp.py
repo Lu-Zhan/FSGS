@@ -174,7 +174,7 @@ def training(dataset, opt, pipe, args):
             #         gaussians.scaleup_scaling(scale_factor=scale_factor)
             
             # LZ: Low-pass filtering
-            if iteration % opt.lowpass_interval == 0 and iteration < opt.lowpass_until_iter:
+            if iteration % opt.lowpass_interval == 1 and iteration < opt.lowpass_until_iter:
                 lp_factor = opt.init_lowpass_factor * (1 - iteration / opt.lowpass_until_iter)
                 print("Apply Low pass factor", lp_factor)
                 gaussians.apply_low_pass_filter(lp_factor=lp_factor)
