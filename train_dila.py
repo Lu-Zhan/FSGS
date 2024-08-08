@@ -166,7 +166,7 @@ def training(dataset, opt, pipe, args):
                     gaussians.densify_and_prune(opt.densify_grad_threshold, opt.prune_threshold, scene.cameras_extent, size_threshold, iteration)
             
             # LZ: Dilation
-            if iteration % opt.dilation_interval == 0 and iteration < opt.dilation_until_iter:
+            if (iteration == 0) or ((iteration - 500) % opt.dilation_interval == 0 and iteration < opt.dilation_until_iter):
                 if iteration < opt.iterations - opt.dilation_interval:
                     # don't update in the end of training
                     scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
@@ -181,6 +181,17 @@ def training(dataset, opt, pipe, args):
             if (iteration - args.start_sample_pseudo - 1) % opt.opacity_reset_interval == 0 and \
                     iteration > args.start_sample_pseudo:
                 gaussians.reset_opacity()
+            
+            # LZ-Freq: log 3D frequency each 1000 iters
+            if ((iteration % 1000 == 1 and iteration < 1000) or (iteration % 1000 == 0 and iteration >= 1000)) and opt.log_freq == 1:
+                gaussians.log_3D_frequency(
+                    step=iteration, 
+                    save_path=os.path.join(args.model_path, f"3D_frequency/{iteration}.png"),
+                )
+                gaussians.log_3D_frequency_progress(
+                    save_path=os.path.join(args.model_path, f"3D_frequency_progress/{iteration}.png"),
+                )
+
 
 
 def prepare_output_and_logger(args):
