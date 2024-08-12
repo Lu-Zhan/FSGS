@@ -3,12 +3,12 @@ import json
 import glob
 from collections import OrderedDict
 
-exp_dir = '/home/space/exps/fsgs_exps/llff_dila/prove'
+exp_dir = '/home/space/exps/fsgs_exps/llff_dila/sacle_aware'
 exp_names = os.listdir(exp_dir)
 exp_names = [x for x in exp_names]
 exp_names = sorted(exp_names, key=lambda x: float(x.split('_')[-1][3:]))
 
-data_names = os.listdir(os.path.join(exp_dir, exp_names[0]))
+data_names = os.listdir(os.path.join(exp_dir, exp_names[-1]))
 data_names = sorted(data_names)
 
 all_results = OrderedDict()
@@ -30,7 +30,7 @@ for exp_name in exp_names:
 
         all_results[exp_name][data_name] = psnr
 
-with open('eval/temp_prove.csv', 'w+') as f:
+with open('eval/temp_sacle_aware.csv', 'w+') as f:
     f.write('method,' + ','.join(data_names) + '\n')
     for exp_name in exp_names:
         line = exp_name

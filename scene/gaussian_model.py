@@ -131,10 +131,25 @@ class GaussianModel:
         if self.active_sh_degree < self.max_sh_degree:
             self.active_sh_degree += 1
     
-    #LZ: add scaling up function
+    # LZ: add scaling up function
     def scaleup_scaling(self, scale_factor=1.1):
         self._scaling.data = self.scaling_inverse_activation(self.get_scaling.data * scale_factor)
+
+    # LZ: add scaling up function by scaling
+    def scaleup_scaling_by_scale(self, scale_factor=1.1):
+        ratio_by_scale = self.compute_ratio_by_sacling()
+        scale_factor = (scale_factor - 1) * ratio_by_scale + 1
+        self._scaling.data = self.scaling_inverse_activation(self.get_scaling.data * scale_factor)
     
+    # LZ: add scaling up function by scaling
+    def compute_ratio_by_sacling(self):
+        scales = self.get_scaling
+        mean_scale = torch.mean(scales, dim=0, keepdim=True)
+        var_scale = torch.var(scales, dim=0, keepdim=True)
+        max_value = mean_scale + 3 * var_scale
+        ratio_by_scale = torch.relu(1 - scales / max_value) * 0.9 + 0.1    # range [0.1, 1]
+        return ratio_by_scale
+
     # LZ: add low-pass filter to scale and opacity
     def apply_low_pass_filter(self, lp_factor=0.1):
         scales = self.get_scaling.data
