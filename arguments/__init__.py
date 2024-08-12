@@ -101,7 +101,7 @@ class OptimizationParams(ParamGroup):
         # LZ: add dilation parameters
         self.dilation_interval = 1000
         self.dilation_factor = 0.1
-        self.dilation_until_iter = 30_000
+        self.dilation_until_iter = 10_000
 
         # LZ: add low-pass filtering parameters
         self.init_lowpass_factor = 0.1
@@ -111,6 +111,7 @@ class OptimizationParams(ParamGroup):
         # LZ: control if use the proximity term
         self.use_proximity = 1
         self.log_freq = 1
+        self.log_freq_each_steps = 100
 
         super().__init__(parser, "Optimization Parameters")
 

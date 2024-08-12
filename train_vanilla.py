@@ -100,36 +100,36 @@ def training(dataset, opt, pipe, args):
         loss = ((1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image)))
 
 
-        rendered_depth = render_pkg["depth"][0]
-        midas_depth = torch.tensor(viewpoint_cam.depth_image).cuda()
-        rendered_depth = rendered_depth.reshape(-1, 1)
-        midas_depth = midas_depth.reshape(-1, 1)
+        # rendered_depth = render_pkg["depth"][0]
+        # midas_depth = torch.tensor(viewpoint_cam.depth_image).cuda()
+        # rendered_depth = rendered_depth.reshape(-1, 1)
+        # midas_depth = midas_depth.reshape(-1, 1)
 
-        depth_loss = min(
-                        (1 - pearson_corrcoef( - midas_depth, rendered_depth)),
-                        (1 - pearson_corrcoef(1 / (midas_depth + 200.), rendered_depth))
-        )
-        loss += args.depth_weight * depth_loss
+        # depth_loss = min(
+        #                 (1 - pearson_corrcoef( - midas_depth, rendered_depth)),
+        #                 (1 - pearson_corrcoef(1 / (midas_depth + 200.), rendered_depth))
+        # )
+        # loss += args.depth_weight * depth_loss
 
-        if iteration > args.end_sample_pseudo:
-            args.depth_weight = 0.001
+        # if iteration > args.end_sample_pseudo:
+        #     args.depth_weight = 0.001
 
-        if iteration % args.sample_pseudo_interval == 0 and iteration > args.start_sample_pseudo and iteration < args.end_sample_pseudo:
-            if not pseudo_stack:
-                pseudo_stack = scene.getPseudoCameras().copy()
-            pseudo_cam = pseudo_stack.pop(randint(0, len(pseudo_stack) - 1))
+        # if iteration % args.sample_pseudo_interval == 0 and iteration > args.start_sample_pseudo and iteration < args.end_sample_pseudo:
+        #     if not pseudo_stack:
+        #         pseudo_stack = scene.getPseudoCameras().copy()
+        #     pseudo_cam = pseudo_stack.pop(randint(0, len(pseudo_stack) - 1))
 
-            render_pkg_pseudo = render(pseudo_cam, gaussians, pipe, background)
-            rendered_depth_pseudo = render_pkg_pseudo["depth"][0]
-            midas_depth_pseudo = estimate_depth(render_pkg_pseudo["render"], mode='train')
+        #     render_pkg_pseudo = render(pseudo_cam, gaussians, pipe, background)
+        #     rendered_depth_pseudo = render_pkg_pseudo["depth"][0]
+        #     midas_depth_pseudo = estimate_depth(render_pkg_pseudo["render"], mode='train')
 
-            rendered_depth_pseudo = rendered_depth_pseudo.reshape(-1, 1)
-            midas_depth_pseudo = midas_depth_pseudo.reshape(-1, 1)
-            depth_loss_pseudo = (1 - pearson_corrcoef(rendered_depth_pseudo, -midas_depth_pseudo)).mean()
+        #     rendered_depth_pseudo = rendered_depth_pseudo.reshape(-1, 1)
+        #     midas_depth_pseudo = midas_depth_pseudo.reshape(-1, 1)
+        #     depth_loss_pseudo = (1 - pearson_corrcoef(rendered_depth_pseudo, -midas_depth_pseudo)).mean()
 
-            if torch.isnan(depth_loss_pseudo).sum() == 0:
-                loss_scale = min((iteration - args.start_sample_pseudo) / 500., 1)
-                loss += loss_scale * args.depth_pseudo_weight * depth_loss_pseudo
+        #     if torch.isnan(depth_loss_pseudo).sum() == 0:
+        #         loss_scale = min((iteration - args.start_sample_pseudo) / 500., 1)
+        #         loss += loss_scale * args.depth_pseudo_weight * depth_loss_pseudo
 
 
         loss.backward()
@@ -163,8 +163,15 @@ def training(dataset, opt, pipe, args):
 
                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
                     size_threshold = None
-                    gaussians.densify_and_prune(opt.densify_grad_threshold, opt.prune_threshold, scene.cameras_extent, size_threshold, iteration)
-            
+                    gaussians.densify_and_prune(
+                        opt.densify_grad_threshold, 
+                        opt.prune_threshold, 
+                        scene.cameras_extent, 
+                        size_threshold, 
+                        iteration,
+                        us_proximity=opt.use_proximity,
+                    )
+
             # LZ: Dilation
             if iteration % opt.dilation_interval == 0 and iteration < opt.dilation_until_iter:
                 if iteration < opt.iterations - opt.dilation_interval:
@@ -172,6 +179,12 @@ def training(dataset, opt, pipe, args):
                     print('dilation on step=', iteration)
                     scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
                     gaussians.scaleup_scaling(scale_factor=scale_factor)
+
+            # # LZ: Low-pass filtering
+            # if iteration % opt.lowpass_interval == 0 and iteration < opt.lowpass_until_iter:
+            #     lp_factor = opt.init_lowpass_factor * (1 - iteration / opt.lowpass_until_iter) # * scene.cameras_extent ** 2
+            #     print("Apply Low pass factor", lp_factor)
+            #     gaussians.apply_low_pass_filter(lp_factor=lp_factor)
 
             # Optimizer step
             if iteration < opt.iterations:
@@ -284,10 +297,10 @@ if __name__ == "__main__":
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
 
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[10_00, 20_00, 30_00, 50_00, 10_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[50_00, 10_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[10_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[10_000])
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[50_00, 10_000])
+    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[10_000])
     parser.add_argument("--start_checkpoint", type=str, default = None)
     parser.add_argument("--train_bg", action="store_true")
     args = parser.parse_args(sys.argv[1:])

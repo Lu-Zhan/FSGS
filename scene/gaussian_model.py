@@ -539,7 +539,7 @@ class GaussianModel:
         self.denom[update_filter] += 1
 
     @torch.no_grad()
-    def log_3D_frequency(self, step, save_path):
+    def log_3D_frequency(self, step, save_path, max_freq=2000, x_step=1000):
         import scipy.stats as stats
 
         scales = self.get_scaling.data
@@ -573,7 +573,7 @@ class GaussianModel:
             std_x = scales_freq[:, c].cpu().numpy()
 
             # x = np.linspace(0, std_x_mean + 3 * std_x_std, 1000)
-            x = np.linspace(0, 2000, 1000)
+            x = np.linspace(0, max_freq, x_step)
 
             y = 0
             for op, std in zip(opacity, std_x):
@@ -604,7 +604,7 @@ class GaussianModel:
 
         # save x y into npz
         np.savez(save_path.replace('.png', '.npz'), x=x, y=np.exp(y) - 1)
-    
+
     @torch.no_grad()
     def log_3D_frequency_progress(self, save_path):
         from matplotlib import colormaps
@@ -641,3 +641,34 @@ class GaussianModel:
         im = Image.fromarray(image)
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         im.save(save_path)
+
+    @torch.no_grad()
+    def log_frequency_data(self, step, save_path, max_freq=2000, x_step=1000):
+        import scipy.stats as stats
+
+        scales = self.get_scaling.data
+        scales_freq = 1 / scales    # (n, 3)
+
+        opacity = self.get_opacity[:, 0]
+
+        mask = opacity > 0.01
+        scales_freq = scales_freq[mask]
+        opacity = opacity[mask].cpu().numpy()
+
+        freq_stat = []
+        
+        for c in range(3):
+            std_x = scales_freq[:, c].cpu().numpy()
+            x = np.linspace(0, max_freq, x_step)
+
+            y = 0
+            for op, std in zip(opacity, std_x):
+                y += op * stats.norm.pdf(x, 0, std)
+            data = np.stack((x, y), axis=1) # (1000, 2)
+
+            freq_stat.append(data)
+        
+        freq_stat = np.stack(freq_stat, axis=0)   # (3, 1000, 2)
+
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        np.save(save_path, freq_stat)
