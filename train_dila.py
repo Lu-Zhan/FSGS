@@ -109,7 +109,9 @@ def training(dataset, opt, pipe, args):
                         (1 - pearson_corrcoef( - midas_depth, rendered_depth)),
                         (1 - pearson_corrcoef(1 / (midas_depth + 200.), rendered_depth))
         )
-        loss += args.depth_weight * depth_loss
+
+        if args.depth_weight > 0:
+            loss += args.depth_weight * depth_loss
 
         if iteration > args.end_sample_pseudo:
             args.depth_weight = 0.001
@@ -284,10 +286,10 @@ if __name__ == "__main__":
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
 
-    parser.add_argument("--test_iterations", nargs="+", type=int, default=[10_00, 20_00, 30_00, 50_00, 10_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[50_00, 10_000])
+    parser.add_argument("--test_iterations", nargs="+", type=int, default=[10_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[10_000])
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[50_00, 10_000])
+    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[10_000])
     parser.add_argument("--start_checkpoint", type=str, default = None)
     parser.add_argument("--train_bg", action="store_true")
     args = parser.parse_args(sys.argv[1:])
