@@ -3,7 +3,7 @@ import json
 import glob
 from collections import OrderedDict
 
-exp_dir = '/home/titan/exps_backup/supp_exps/fewshot/mip360_view24'
+exp_dir = '/home/titan/exps_backup/supp_exps/fewshot/mip360_view12'
 exp_names = os.listdir(exp_dir)
 exp_names = [x for x in exp_names]
 exp_names = sorted(exp_names, key=lambda x: float(x.split('_')[-1][3:]))
@@ -22,7 +22,7 @@ for exp_name in exp_names:
             with open(metrics_path, 'r') as f:
                 results = json.load(f)
             
-            results = results['ours_10000']
+            results = results['ours_30000']
 
             psnr, ssim, lpips = results['PSNR'], results['SSIM'], results['LPIPS']
         except:
@@ -34,7 +34,7 @@ for exp_name in exp_names:
             'lpips': lpips
         }
 
-with open('eval/llff_6.csv', 'w+') as f:
+with open('eval/mip360_view12.csv', 'w+') as f:
     f.write('method,' + ','.join(data_names) + '\n')
 
     for metric_type in ['psnr', 'ssim', 'lpips']:
