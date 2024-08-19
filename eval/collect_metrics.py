@@ -3,7 +3,7 @@ import json
 import glob
 from collections import OrderedDict
 
-exp_dir = '/home/space/exps/fsgs_exps/llff_dila/prove'
+exp_dir = '/home/titan/exps_backup/fsgs_exps/llff_6'
 exp_names = os.listdir(exp_dir)
 exp_names = [x for x in exp_names]
 exp_names = sorted(exp_names, key=lambda x: float(x.split('_')[-1][3:]))
@@ -34,7 +34,7 @@ for exp_name in exp_names:
             'lpips': lpips
         }
 
-with open('eval/temp_exp.csv', 'w+') as f:
+with open('eval/llff_6.csv', 'w+') as f:
     f.write('method,' + ','.join(data_names) + '\n')
 
     for metric_type in ['psnr', 'ssim', 'lpips']:

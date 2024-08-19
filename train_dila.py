@@ -198,11 +198,8 @@ def training(dataset, opt, pipe, args):
             # LZ-Freq: log freq data
             each_steps = opt.log_freq_each_steps
             if ((iteration % each_steps == 1 and iteration < each_steps) or (iteration % each_steps == 0 and iteration >= each_steps)) and opt.log_freq == 1:
-                gaussians.log_frequency_data(
-                    step=iteration, 
+                gaussians.log_scale_opacity_data(
                     save_path=os.path.join(args.model_path, f"frequency_data/{iteration}.npy"),
-                    max_freq=3000,
-                    x_step=1000,
                 )
 
 def prepare_output_and_logger(args):

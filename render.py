@@ -86,7 +86,7 @@ def render_sets(dataset : ModelParams, pipeline : PipelineParams, args):
 
     with torch.no_grad():
         gaussians = GaussianModel(args)
-        scene = Scene(args, gaussians, load_iteration=args.iteration, shuffle=False)
+        scene = Scene(args, gaussians, load_iteration=args.iteration, shuffle=False, used_sets=['test'])
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")

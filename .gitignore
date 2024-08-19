@@ -7,3 +7,6 @@ diff_rasterization/dist
 .idea
 scripts
 *.csv
+*.mat
+*.png
+*.svg

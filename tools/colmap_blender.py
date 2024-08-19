@@ -2,7 +2,26 @@ import os
 import numpy as np
 import sys
 import sqlite3
+import json
+from pathlib import Path
+from tqdm import tqdm
+import math
 
+
+def rotmat2qvec(R):
+    Rxx, Ryx, Rzx, Rxy, Ryy, Rzy, Rxz, Ryz, Rzz = R.flat
+    K = np.array([
+        [Rxx - Ryy - Rzz, 0, 0, 0],
+        [Ryx + Rxy, Ryy - Rxx - Rzz, 0, 0],
+        [Rzx + Rxz, Rzy + Ryz, Rzz - Rxx - Ryy, 0],
+        [Ryz - Rzy, Rzx - Rxz, Rxy - Ryx, Rxx + Ryy + Rzz]]) / 3.0
+    eigvals, eigvecs = np.linalg.eigh(K)
+    qvec = eigvecs[[3, 0, 1, 2], np.argmax(eigvals)]
+    if qvec[0] < 0:
+        qvec *= -1
+    return qvec
+
+blender2opencv = np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
 IS_PYTHON3 = sys.version_info[0] >= 3
 MAX_IMAGE_ID = 2**31 - 1
@@ -142,38 +161,52 @@ def pipeline(scene, base_path, n_views):
 
 
     images = {}
-    with open('../sparse/0/images.txt', "r") as fid:
-        while True:
-            line = fid.readline()
-            if not line:
-                break
-            line = line.strip()
-            if len(line) > 0 and line[0] != "#":
-                elems = line.split()
-                image_id = int(elems[0])
-                qvec = np.array(tuple(map(float, elems[1:5])))
-                tvec = np.array(tuple(map(float, elems[5:8])))
-                camera_id = int(elems[8])
-                image_name = elems[9]
-                fid.readline().split()
-                images[image_name] = elems[1:]
 
-    img_list = sorted(images.keys(), key=lambda x: x)
-    train_img_list = [c for idx, c in enumerate(img_list) if idx % llffhold != 0]
+    with open('../transforms_train.json') as json_file:
+        contents = json.load(json_file)
+        # print(f"contents is {contents}")
+        fovx = contents["camera_angle_x"]
+        # print(f"fovx is {fovx}")
+        skip = 1
+        frames = contents["frames"][::skip]
+        idx = 1
+        for frame in frames:
+            fname = frame['file_path'].split('/')[-1]
+            if not (fname.endswith('.png') or fname.endswith('.jpg')):
+                fname += '.png'
+            pose = np.array(frame['transform_matrix']) @ blender2opencv
+            R = np.linalg.inv(pose[:3, :3])
+            T = -np.matmul(R, pose[:3, 3])
+            q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
+            q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
+            q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
+            q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
+            elems = f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} 1 {fname}\n\n'
+            images[fname] = elems[1:]
+
+    train_idx = [2, 16, 26, 55, 73, 76, 86, 93]
+        
+    # img_list = sorted(images.keys(), key=lambda x: x)
+    img_list = images.keys()
+    # train_img_list = [c for idx, c in enumerate(img_list) if idx % llffhold != 0]
+    train_img_list = [c for idx, c in enumerate(img_list)]
     if n_views > 0:
-        idx_sub = [round_python3(i) for i in np.linspace(0, len(train_img_list)-1, n_views)]
+        # idx_sub = [round_python3(i) for i in np.linspace(0, len(train_img_list)-1, n_views)]
+        idx_sub = train_idx[:n_views]
         train_img_list = [c for idx, c in enumerate(train_img_list) if idx in idx_sub]
 
+    print(f"train_img_list is {train_img_list}")
 
     for img_name in train_img_list:
         os.system('cp ../images/' + img_name + '  images/' + img_name)
 
-    os.system('cp ../sparse/0/cameras.txt created/.')
+    os.system('cp ../blender2colmap/sparse/cameras.txt created/.')
     with open('created/points3D.txt', "w") as fid:
         pass
 
-    res = os.popen( 'colmap feature_extractor --database_path database.db --image_path images  --SiftExtraction.max_image_size 4032 --SiftExtraction.max_num_features 16384 --SiftExtraction.estimate_affine_shape 1 --SiftExtraction.domain_size_pooling 1').read()
-    os.system( 'colmap exhaustive_matcher --database_path database.db --SiftMatching.guided_matching 1 --SiftMatching.max_num_matches 32768')
+    res = os.popen( 'colmap feature_extractor --database_path database.db --image_path images  --SiftExtraction.max_image_size 4032 --SiftExtraction.max_num_features 16384 --SiftExtraction.estimate_affine_shape 1 --SiftExtraction.domain_size_pooling 1 --SiftExtraction.gpu_index 0').read()
+    print(f"feature load")
+    os.system( 'colmap exhaustive_matcher --database_path database.db --SiftMatching.guided_matching 1 --SiftMatching.max_num_matches 32768 --SiftMatching.gpu_index 0')
     db = COLMAPDatabase.connect('database.db')
     db_images = db.execute("SELECT * FROM images")
     img_rank = [db_image[1] for db_image in db_images]
@@ -181,7 +214,8 @@ def pipeline(scene, base_path, n_views):
     with open('created/images.txt', "w") as fid:
         for idx, img_name in enumerate(img_rank):
             print(img_name)
-            data = [str(1 + idx)] + [' ' + item for item in images[os.path.basename(img_name)]] + ['\n\n']
+            # data = [str(1 + idx)] + [' ' + item for item in images[os.path.basename(img_name)]] + ['\n\n']
+            data = [str(1 + idx)] + [images[os.path.basename(img_name)]]
             fid.writelines(data)
 
     os.system('colmap point_triangulator --database_path database.db --image_path images --input_path created  --output_path triangulated  --Mapper.ba_local_max_num_iterations 40 --Mapper.ba_local_max_refinements 3 --Mapper.ba_global_max_num_iterations 100')
@@ -192,11 +226,10 @@ def pipeline(scene, base_path, n_views):
 
 
 # for scene in ['bicycle', 'bonsai', 'counter', 'garden',  'kitchen', 'room', 'stump']:
-#     pipeline(scene, base_path = '/ssd1/zehao/FSGS/dataset/mipnerf360/', n_views = 24)  # please use absolute path!
+# for scene in ['bicycle', 'bonsai', 'counter', 'garden', 'kitchen', 'room', 'stump']:
+# ['chair', 'drums', 'ficus', 'hotdog', 'lego', 'materials', 'mic', 'ship']
+# scene = 'drums'
+# pipeline(scene, base_path = '/home/luzhan/nerf_synthetic/', n_views = 8)
 
-for scene in ['garden',  'kitchen', 'stump']:
-    pipeline(scene, base_path = '/home/luzhan/nerf_360_v2/', n_views = 12)  # please use absolute path!
-
-
-# for scene in ['fern', 'flower', 'fortress',  'horns',  'leaves',  'orchids',  'room',  'trex']:# ['bonsai', 'counter', 'garden', 'kitchen', 'room', 'stump']:
-#     pipeline(scene, base_path = '/home/luzhan/nerf_llff_data/', n_views = 9)  # please use absolute path!
+for scene in ['chair', 'drums', 'ficus', 'hotdog', 'lego', 'materials', 'mic', 'ship']:
+    pipeline(scene, base_path = '/home/luzhan/nerf_synthetic/', n_views = 8)

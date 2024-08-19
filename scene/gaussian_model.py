@@ -672,3 +672,12 @@ class GaussianModel:
 
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         np.save(save_path, freq_stat)
+
+    @torch.no_grad()
+    def log_scale_opacity_data(self, save_path):
+        scales = self.get_scaling.data
+        opacity = self.get_opacity.data
+        freq_stat = torch.cat((scales, opacity), dim=1).cpu().numpy()   # (n, 4)
+
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        np.save(save_path, freq_stat)

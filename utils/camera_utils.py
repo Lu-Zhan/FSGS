@@ -22,8 +22,15 @@ WARNED = False
 def loadCam(args, id, cam_info, resolution_scale):
     orig_w, orig_h = cam_info.image.size
 
-    if args.resolution in [1, 2, 4, 8]:
-        resolution = round(orig_w/(resolution_scale * args.resolution)), round(orig_h/(resolution_scale * args.resolution))
+    print(f"Loading camera {id} with resolution {cam_info.image.size}")
+
+    if args.resolution in [0, 1, 2, 4, 8]:
+        
+        if args.resolution == 0:
+            resolution = round(orig_w/(resolution_scale / 8)), round(orig_h/(resolution_scale / 8))
+        else:
+            resolution = round(orig_w/(resolution_scale * args.resolution)), round(orig_h/(resolution_scale * args.resolution))
+        
     else:  # should be a type that converts to float
         if args.resolution == -1:
             if orig_w > 1600:
@@ -41,6 +48,7 @@ def loadCam(args, id, cam_info, resolution_scale):
         scale = float(global_down) * float(resolution_scale)
         resolution = (int(orig_w / scale), int(orig_h / scale))
 
+    # breakpoint()
     resized_image_rgb = PILtoTorch(cam_info.image, resolution)
     mask = None if cam_info.mask is None else cv2.resize(cam_info.mask, resolution)
     gt_image = resized_image_rgb[:3, ...]

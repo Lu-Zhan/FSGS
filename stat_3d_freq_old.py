@@ -112,7 +112,7 @@ def compare_methods(method_paths, method_names, save_path, freq_split=[800, 1600
 if __name__ == '__main__':
     data_dir = '/home/titan/exps_backup/fsgs_exps/llff/freq_stat'
 
-    exp_names = ['vanilla_dila0_den0.0005', 'vanilla_dila0.3_den0.0005', 'fsgs_dila0_den0.0005', 'fsgs_dila0.3_den0.0005']
+    exp_names = ['vanilla_dila0_den0.0005', 'vanilla_dila0.3_den0.0005', 'fsgs_depth', 'fsgs_unpool', 'fsgs_peosudoviews']
     data_names = ['fern', 'flower', 'fortress', 'horns', 'leaves', 'orchids', 'room', 'trex']
 
     # for exp_name in exp_names:
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     for data_name in data_names:
         data_paths = [os.path.join(data_dir, exp_name, data_name, 'frequency_data') for exp_name in exp_names]
-        methods_names = ['3DGS', 'Freq-GS', 'FSGS', 'FSGS w/ FreqReg']
+        methods_names = ['3DGS', 'Freq-GS', 'w/ Depth', 'w/ Continuity', 'w/ Pseudo-views']
         
         try:
             compare_methods(data_paths, methods_names, os.path.join(data_dir, 'freq_stat', f'{data_name}.png'), freq_split=[800, 1600])

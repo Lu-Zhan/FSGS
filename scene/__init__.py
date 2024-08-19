@@ -25,7 +25,7 @@ class Scene:
 
     gaussians : GaussianModel
 
-    def __init__(self, args : ModelParams, gaussians : GaussianModel, load_iteration=None, shuffle=True, resolution_scales=[1.0]):
+    def __init__(self, args : ModelParams, gaussians : GaussianModel, load_iteration=None, shuffle=True, resolution_scales=[1.0], used_sets=['train', 'test']):
         """b
         :param path: Path to colmap scene main folder.
         """
@@ -44,7 +44,7 @@ class Scene:
         self.test_cameras = {}
         self.pseudo_cameras = {}
 
-        if os.path.exists(os.path.join(args.source_path, "sparse")) or os.path.exists(os.path.join(args.source_path, "3_views")):
+        if os.path.exists(os.path.join(args.source_path, "sparse")) or os.path.exists(os.path.join(args.source_path, "3_views")) or os.path.exists(os.path.join(args.source_path, "24_views")) or os.path.exists(os.path.join(args.source_path, "12_views")):
             scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, args.n_views)
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
             print("Found transforms_train.json file, assuming Blender data set!")
@@ -75,23 +75,28 @@ class Scene:
         print(self.cameras_extent, 'cameras_extent')
 
         for resolution_scale in resolution_scales:
-            print("Loading Training Cameras")
-            self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
-            print("Loading Test Cameras")
-            self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
+            if 'train' in used_sets:
+                print("Loading Training Cameras")
+                self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
+            
+            if 'test' in used_sets:
+                print(args.resolution)
+                print("Loading Test Cameras")
+                self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
 
-            pseudo_cams = []
-            if args.source_path.find('llff'):
-                pseudo_poses = generate_random_poses_llff(self.train_cameras[resolution_scale])
-            elif args.source_path.find('360'):
-                pseudo_poses = generate_random_poses_360(self.train_cameras[resolution_scale])
-            view = self.train_cameras[resolution_scale][0]
-            for pose in pseudo_poses:
-                pseudo_cams.append(PseudoCamera(
-                    R=pose[:3, :3].T, T=pose[:3, 3], FoVx=view.FoVx, FoVy=view.FoVy,
-                    width=view.image_width, height=view.image_height
-                ))
-            self.pseudo_cameras[resolution_scale] = pseudo_cams
+            if 'train' in used_sets:
+                pseudo_cams = []
+                if args.source_path.find('llff'):
+                    pseudo_poses = generate_random_poses_llff(self.train_cameras[resolution_scale])
+                elif args.source_path.find('360'):
+                    pseudo_poses = generate_random_poses_360(self.train_cameras[resolution_scale])
+                view = self.train_cameras[resolution_scale][0]
+                for pose in pseudo_poses:
+                    pseudo_cams.append(PseudoCamera(
+                        R=pose[:3, :3].T, T=pose[:3, 3], FoVx=view.FoVx, FoVy=view.FoVy,
+                        width=view.image_width, height=view.image_height
+                    ))
+                self.pseudo_cameras[resolution_scale] = pseudo_cams
 
 
         if self.loaded_iter:
