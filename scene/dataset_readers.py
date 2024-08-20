@@ -417,7 +417,93 @@ def readNerfSyntheticInfo(path, white_background, eval, n_views=0, extension=".p
     return scene_info
 
 
+def topk_(matrix, K, axis=1):
+    if axis == 0:
+        row_index = np.arange(matrix.shape[1 - axis])
+        topk_index = np.argpartition(-matrix, K, axis=axis)[0:K, :]
+        topk_data = matrix[topk_index, row_index]
+        topk_index_sort = np.argsort(-topk_data,axis=axis)
+        topk_data_sort = topk_data[topk_index_sort,row_index]
+        topk_index_sort = topk_index[0:K,:][topk_index_sort,row_index]
+    else:
+        column_index = np.arange(matrix.shape[1 - axis])[:, None]
+        topk_index = np.argpartition(-matrix, K, axis=axis)[:, 0:K]
+        topk_data = matrix[column_index, topk_index]
+        topk_index_sort = np.argsort(-topk_data, axis=axis)
+        topk_data_sort = topk_data[column_index, topk_index_sort]
+        topk_index_sort = topk_index[:,0:K][column_index,topk_index_sort]
+    return topk_data_sort
+
+
+def readDTUSceneInfo(path, images, eval, n_views=0, llffhold=8, rand_pcd=False):
+    if rand_pcd:
+        print('Init random point cloud.')
+        ply_path = os.path.join(path, "sparse/0/points3D_random.ply")
+        bin_path = os.path.join(path, "sparse/0/points3D.bin")
+        txt_path = os.path.join(path, "sparse/0/points3D.txt")
+
+        try:
+            xyz, rgb, _ = read_points3D_binary(bin_path)
+        except:
+            xyz, rgb, _ = read_points3D_text(txt_path)
+        print(xyz.max(0), xyz.min(0))
+        pcd_shape = (topk_(xyz, 100, 0)[-1] + topk_(-xyz, 100, 0)[-1])
+        num_pts = 10_00
+        xyz = np.random.random((num_pts, 3)) * pcd_shape * 1.3 - topk_(-xyz, 100, 0)[-1] # - 0.15 * pcd_shape
+        print(pcd_shape)
+        print(f"Generating random point cloud ({num_pts})...")
+        shs = np.random.random((num_pts, 3)) / 255.0
+        storePly(ply_path, xyz, SH2RGB(shs) * 255)
+    else:
+        ply_path = os.path.join(path, str(n_views) + "_views/dense/fused.ply")
+
+    try:
+        cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
+        cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
+        cam_extrinsics = read_extrinsics_binary(cameras_extrinsic_file)
+        cam_intrinsics = read_intrinsics_binary(cameras_intrinsic_file)
+    except:
+        cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.txt")
+        cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.txt")
+        cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
+        cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
+
+
+    pcd = fetchPly(ply_path)
+
+    reading_dir = "images" if images == None else images
+    rgb_mapping = [f for f in sorted(glob.glob(os.path.join(path, reading_dir, '*')))
+                   if f.endswith('JPG') or f.endswith('jpg') or f.endswith('png')]
+    cam_extrinsics = {cam_extrinsics[k].name: cam_extrinsics[k] for k in cam_extrinsics}
+    # breakpoint()
+    cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics,
+                             images_folder=os.path.join(path, reading_dir),  path=path, rgb_mapping=rgb_mapping)
+    cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : x.image_name)
+
+    if eval:
+        train_idx = [25, 22, 28, 40, 44, 48, 0, 8, 13]
+        exclude_idx = [3, 4, 5, 6, 7, 16, 17, 18, 19, 20, 21, 36, 37, 38, 39]
+        test_idx = [i for i in np.arange(49) if i not in train_idx + exclude_idx]
+        if n_views > 0:
+            train_idx = train_idx[:n_views]
+        train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx in train_idx]
+        test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx in test_idx]
+    else:
+        train_cam_infos = cam_infos
+        test_cam_infos = []
+
+    nerf_normalization = getNerfppNorm(train_cam_infos)
+    scene_info = SceneInfo(point_cloud=pcd,
+                           train_cameras=train_cam_infos,
+                           test_cameras=test_cam_infos,
+                           nerf_normalization=nerf_normalization,
+                           ply_path=ply_path)
+    return scene_info
+
+
+
 sceneLoadTypeCallbacks = {
     "Colmap": readColmapSceneInfo,
-    "Blender" : readNerfSyntheticInfo
+    "Blender" : readNerfSyntheticInfo,
+    "DTU": readDTUSceneInfo,
 }

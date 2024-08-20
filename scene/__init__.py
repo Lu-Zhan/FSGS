@@ -45,7 +45,11 @@ class Scene:
         self.pseudo_cameras = {}
 
         if os.path.exists(os.path.join(args.source_path, "sparse")) or os.path.exists(os.path.join(args.source_path, "3_views")) or os.path.exists(os.path.join(args.source_path, "6_views")) or os.path.exists(os.path.join(args.source_path, "9_views")) or os.path.exists(os.path.join(args.source_path, "24_views")) or os.path.exists(os.path.join(args.source_path, "12_views")):
-            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, args.n_views)
+            if args.source_path.find('DTU') != -1:
+                print("############ load DTU ############")
+                scene_info = sceneLoadTypeCallbacks["DTU"](args.source_path, args.images, args.eval, args.n_views)
+            else:
+                scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval, args.n_views)
         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
             print("Found transforms_train.json file, assuming Blender data set!")
             scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval, args.n_views)
