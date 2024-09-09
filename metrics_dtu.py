@@ -85,6 +85,12 @@ def evaluate(model_paths):
 
                 method_dir = test_dir / method
                 mask_dir = Path(scene_dir) / "mask"
+                
+                # breakpoint()
+                scene_name = os.path.basename(str(mask_dir.parent))
+                # method_name = os.path.basename(str(mask_dir.parent.parent))
+                mask_dir = mask_dir.parent.parent.parent / 'corgs' / scene_name / 'mask'
+
                 gt_dir = method_dir/ "gt"
                 renders_dir = method_dir / "renders"
                 renders, gts, image_names, masks = readImages(renders_dir, gt_dir, mask_dir)

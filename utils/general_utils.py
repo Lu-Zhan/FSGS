@@ -131,7 +131,7 @@ def safe_state(silent):
 
     sys.stdout = F(silent)
 
-    seed = 1
+    seed = 42
     os.environ['PYTHONHASHSEED'] = str(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
