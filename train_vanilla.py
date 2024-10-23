@@ -154,6 +154,11 @@ def training(dataset, opt, pipe, args):
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration),
                            scene.model_path + "/chkpnt" + str(iteration) + ".pth")
+            
+            if iteration > first_iter and iteration % 10 == 0 and opt.log_gauss == 1:
+                print("\n[ITER {}] Saving Checkpoint".format(iteration))
+                torch.save((gaussians.capture(), iteration),
+                           scene.model_path + "/ckpt" + f"{iteration:06d}.pth")
 
             # Densification
             if  iteration < opt.densify_until_iter:

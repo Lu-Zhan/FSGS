@@ -112,6 +112,7 @@ class OptimizationParams(ParamGroup):
         self.use_proximity = 1
         self.log_freq = 1
         self.log_freq_each_steps = 100
+        self.log_gauss = 0
 
         super().__init__(parser, "Optimization Parameters")
 
