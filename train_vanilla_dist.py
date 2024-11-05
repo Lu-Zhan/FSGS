@@ -185,7 +185,8 @@ def training(dataset, opt, pipe, args):
                     scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
                     # gaussians.scaleup_scaling(scale_factor=scale_factor)
                     # gaussians.iso_scaleup(scale_factor=scale_factor)
-                    gaussians.iso_scaleup_with_op(scale_factor=scale_factor)
+                    # gaussians.iso_scaleup_with_op(scale_factor=scale_factor)
+                    gaussians.iso_scaleup_by_dist(scale_factor=scale_factor)
 
             # # LZ: Low-pass filtering
             # if iteration % opt.lowpass_interval == 0 and iteration < opt.lowpass_until_iter:

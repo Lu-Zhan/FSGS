@@ -60,9 +60,10 @@ def stat_mip_results(base_dir, exp_names, method_names, scene_names):
 
 
 if __name__ == "__main__":
-    # base_dir = "/home/titan/exps/exps_frgs/byproduct"
-    base_dir = "/home/titan/exps_backup/supp_exps/byproduct"
-    exp_names = ["mip360_view12"]
+    base_dir = "/home/titan/exps/exps_frgs/few_shot"
+    # base_dir = "/home/titan/exps_backup/supp_exps/byproduct"
+    # exp_names = ["mip360_view12"]
+    exp_names = ["llff_view3"]
 
     method_names = os.listdir(os.path.join(base_dir, exp_names[0]))
     method_names = sorted(method_names)
