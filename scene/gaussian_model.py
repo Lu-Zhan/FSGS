@@ -131,6 +131,16 @@ class GaussianModel:
         if self.active_sh_degree < self.max_sh_degree:
             self.active_sh_degree += 1
     
+    # LZ: add is isotropic scaling up function
+    def iso_scaleup(self, scale_factor=1.1):
+        scales = self.get_scaling.data  # (n, 3)
+        min_scales = torch.min(scales, dim=1, keepdim=True).values # (n, 1)
+
+        ratio = torch.clamp(min_scales / (scales + 1e-8), min=0.1, max=1) # (n, 3) <=1
+        modified_scales = scales * ((scale_factor - 1) * ratio + 1)
+
+        self._scaling.data = self.scaling_inverse_activation(modified_scales)
+    
     # LZ: add scaling up function
     def scaleup_scaling(self, scale_factor=1.1):
         self._scaling.data = self.scaling_inverse_activation(self.get_scaling.data * scale_factor)

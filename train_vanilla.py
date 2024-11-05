@@ -183,7 +183,8 @@ def training(dataset, opt, pipe, args):
                     # don't update in the end of training
                     print('dilation on step=', iteration)
                     scale_factor = 1 + opt.dilation_factor * (1 - iteration / opt.iterations)
-                    gaussians.scaleup_scaling(scale_factor=scale_factor)
+                    # gaussians.scaleup_scaling(scale_factor=scale_factor)
+                    gaussians.iso_scaleup(scale_factor=scale_factor)
 
             # # LZ: Low-pass filtering
             # if iteration % opt.lowpass_interval == 0 and iteration < opt.lowpass_until_iter:

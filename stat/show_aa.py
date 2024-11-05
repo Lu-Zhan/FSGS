@@ -52,7 +52,7 @@ def stat_mip_results(base_dir, exp_names, method_names, scene_names):
                 line = f"{method_name}, " + ", ".join([f"{res_dict[method_name][scene_name][metric]:.4f}" for scene_name in scene_names]) + "\n"
                 res.append(line)
         
-        csv_save_path = f"stat/results/{exp_name}.csv"
+        csv_save_path = f"stat/results/{exp_name}_iso.csv"
         os.makedirs(os.path.dirname(csv_save_path), exist_ok=True)
         
         with open(csv_save_path, "w+") as f:
@@ -60,8 +60,9 @@ def stat_mip_results(base_dir, exp_names, method_names, scene_names):
 
 
 if __name__ == "__main__":
-    base_dir = "/home/titan/exps/exps_frgs/few_shot"
-    exp_names = ["llff_view3"]
+    # base_dir = "/home/titan/exps/exps_frgs/byproduct"
+    base_dir = "/home/titan/exps_backup/supp_exps/byproduct"
+    exp_names = ["mip360_view12"]
 
     method_names = os.listdir(os.path.join(base_dir, exp_names[0]))
     method_names = sorted(method_names)
