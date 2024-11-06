@@ -76,7 +76,7 @@ class Scene:
             random.shuffle(scene_info.test_cameras)  # Multi-res consistent random shuffling
 
         self.cameras_extent = scene_info.nerf_normalization["radius"]
-        print(self.cameras_extent, 'cameras_extent')
+        print('cameras_extent', self.cameras_extent)
 
         for resolution_scale in resolution_scales:
             if 'train' in used_sets:

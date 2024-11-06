@@ -185,7 +185,7 @@ def training(dataset, opt, pipe, args):
                     # gaussians.scaleup_scaling(scale_factor=scale_factor)
                     print('step:', iteration, 'scale_factor:', scale_factor)
 
-                    gaussians.iso_scaleup(scale_factor=scale_factor)
+                    gaussians.iso_scaleup_with_op(scale_factor=scale_factor)
                     # gaussians.iso_scaleup_by_dist(scale_factor=scale_factor)
 
 
