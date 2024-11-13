@@ -26,7 +26,7 @@ torch.set_float32_matmul_precision("medium")
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background, kernel_size, scale_factor):
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), f"test_preds_{scale_factor}")
-    gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), f"gt_{scale_factor}")\
+    gts_path = os.path.join(model_path, name, "ours_{}".format(iteration), f"gt_{scale_factor}")
 
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)

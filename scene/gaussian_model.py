@@ -184,39 +184,15 @@ class GaussianModel:
     # LZ: add is isotropic scaling up function with fixed opacity
     def iso_scaleup_with_op(self, scale_factor=1.1):
         scales = self.get_scaling.data  # (n, 3)
-        min_scales = torch.min(scales, dim=1, keepdim=True).values # (n, 1)
+        # min_scales = torch.min(scales, dim=1, keepdim=True).values # (n, 1)
+        max_scales = torch.max(scales, dim=1, keepdim=True).values # (n, 1)
 
-        ratio = torch.clamp(min_scales / (scales + 1e-8), min=0.1, max=1) # (n, 3) <=1
+        # ratio = torch.clamp(min_scales / (scales + 1e-8), min=0.1, max=1) # (n, 3) <=1
+        ratio = max_scales / (scales + 1e-8) # (n, 3) >= 1
         scale_factor = (scale_factor - 1) * ratio + 1
 
         modified_scales = scales * scale_factor
         modified_opactiy = self.get_opacity.data / scale_factor.prod(dim=1, keepdim=True)
-
-        self._scaling.data = self.scaling_inverse_activation(modified_scales)
-        self._opacity.data = self.inverse_opacity_activation(modified_opactiy)
-
-    def iso_scaleup_with_coef(self, scale_factor=1.1):
-        scales = self.get_scaling.data  # (n, 3)
-        min_scales = torch.min(scales, dim=1, keepdim=True).values # (n, 1)
-
-        ratio = torch.clamp(min_scales / (scales + 1e-8), min=0.1, max=1) # (n, 3) <=1
-        scale_factor = (scale_factor - 1) * ratio + 1
-
-        modified_scales = scales * scale_factor
-
-
-        opacity = self.opacity_activation(self._opacity).data
-        
-        scales_square = torch.square(scales)
-        det1 = scales_square.prod(dim=1)
-        
-        scales_after_square = torch.square(modified_scales) 
-        det2 = scales_after_square.prod(dim=1) 
-        coef = torch.sqrt(det1 / det2)
-        
-        modified_opactiy = opacity * coef[..., None]
-    
-        # modified_opactiy = self.get_opacity.data / scale_factor.prod(dim=1, keepdim=True)
 
         self._scaling.data = self.scaling_inverse_activation(modified_scales)
         self._opacity.data = self.inverse_opacity_activation(modified_opactiy)

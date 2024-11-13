@@ -186,7 +186,6 @@ def training(dataset, opt, pipe, args):
                     print('step:', iteration, 'scale_factor:', scale_factor)
 
                     gaussians.iso_scaleup(scale_factor=scale_factor)
-                    # gaussians.iso_scaleup_by_dist(scale_factor=scale_factor)
 
 
             # # LZ: Low-pass filtering

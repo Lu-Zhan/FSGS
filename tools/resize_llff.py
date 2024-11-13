@@ -5,10 +5,12 @@ from PIL import Image
 dataset_dir = "/home/space/datasets/nvs/nerf_llff_data"
 scenes = os.listdir(dataset_dir)
 
+scenes = ["trex", "horns"]
+
 for scene in scenes:
     scene_dir = os.path.join(dataset_dir, scene)
 
-    image_paths = glob.glob(os.path.join(scene_dir, "images", "*.JPG"))
+    image_paths = glob.glob(os.path.join(scene_dir, "images", "*.JPG")) + glob.glob(os.path.join(scene_dir, "images", "*.jpg"))
     image_paths.sort()
 
     for i, image_path in enumerate(image_paths):

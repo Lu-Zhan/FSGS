@@ -38,6 +38,9 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
 
+    # gaussians.iso_scaleup_by_dist(4)
+    # gaussians.apply_low_pass_filter(0.01)
+
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         rendering = render(view, gaussians, pipeline, background)
         gt = view.original_image[0:3, :, :]
@@ -89,7 +92,14 @@ def render_sets(dataset : ModelParams, pipeline : PipelineParams, args):
         gaussians = GaussianModel(args)
         scale_factor = sf[args.images]
 
-        scene = Scene(args, gaussians, load_iteration=args.iteration, shuffle=False, used_sets=['test'])
+        used_sets = []
+        
+        if not args.skip_train:
+            used_sets.append('train')
+        if not args.skip_test:
+            used_sets.append('test')
+
+        scene = Scene(args, gaussians, load_iteration=args.iteration, shuffle=False, used_sets=used_sets)
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
